@@ -1,0 +1,46 @@
+workflows:
+  android-release:
+    name: 8 STORE Android APK
+    max_build_duration: 60
+    environment:
+      flutter: 3.19.6
+      java: 17
+    scripts:
+      - name: Unzip and setup project
+        script: |
+          echo "Current directory contents:"
+          ls -la
+          echo "Finding zip file..."
+          find . -name "*.zip" | head -5
+          ZIP=$(find . -name "*.zip" | head -1)
+          if [ -n "$ZIP" ]; then
+            echo "Extracting: $ZIP"
+            unzip -o "$ZIP" -d /tmp/extracted
+            echo "Extracted contents:"
+            ls -la /tmp/extracted/
+            FLUTTER_DIR=$(find /tmp/extracted -name "pubspec.yaml" | head -1 | xargs dirname)
+            echo "Flutter project found at: $FLUTTER_DIR"
+            cp -r "$FLUTTER_DIR"/. .
+            echo "Final directory:"
+            ls -la
+          else
+            echo "No zip found, using current directory"
+          fi
+      - name: Flutter pub get
+        script: |
+          echo "Running flutter pub get..."
+          flutter pub get
+      - name: Build APK
+        script: |
+          echo "Building APK..."
+          flutter build apk --release --no-shrink
+    artifacts:
+      - build/**/outputs/**/*.apk
+      - build/**/outputs/**/*.aab
+    publishing:
+      email:
+        recipients:
+          - 8storebhutan@gmail.com
+        notify:
+          success: true
+          failure: true
